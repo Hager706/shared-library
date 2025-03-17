@@ -24,7 +24,7 @@ def call(String namespace, String kubeTokenCredId, String kubernetesApiServer, S
             kubectl config use-context jenkins-context
 
             # Apply the deployment
-            kubectl apply -f ${deploymentFile}
+            kubectl apply -f ${deploymentFile} --validate=false
         """
     }
 }
