@@ -1,18 +1,9 @@
-
-// def call(String namespace, String kubeTokenCredId) {
-//     withCredentials([string(credentialsId: kubeTokenCredId, variable: 'KUBE_TOKEN')]) {
-//         sh """
-
-//             kubectl config use-context minikube
-//             kubectl config set-context --current --namespace=${namespace}
-//             kubectl apply -f k8s-deployment.yaml
-//         """
-//     }
-// }
-
 def call(String namespace, String kubeTokenCredId, String kubernetesApiServer, String deploymentFile) {
     withCredentials([string(credentialsId: kubeTokenCredId, variable: 'KUBE_TOKEN')]) {
         sh """
+            # Debugging: Print Kubernetes API server address
+            echo "Kubernetes API Server: ${kubernetesApiServer}"
+
             # Configure Kubernetes credentials
             kubectl config set-credentials jenkins-user --token=${KUBE_TOKEN}
 
@@ -23,9 +14,13 @@ def call(String namespace, String kubeTokenCredId, String kubernetesApiServer, S
             kubectl config set-context jenkins-context --cluster=kubernetes --user=jenkins-user --namespace=${namespace}
             kubectl config use-context jenkins-context
 
+            # Debugging: Verify connectivity to the Kubernetes API server
+            echo "Testing connectivity to the Kubernetes API server..."
+            curl -k ${kubernetesApiServer}
+
             # Apply the deployment
+            echo "Applying deployment file: ${deploymentFile}"
             kubectl apply -f ${deploymentFile} --validate=false
         """
     }
 }
-   
