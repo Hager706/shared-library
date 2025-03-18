@@ -4,7 +4,6 @@ def call(String namespace, String kubeTokenCredId) {
         sh """
             kubectl config use-context minikube
             kubectl config set-context --current --namespace=${namespace}
-            kubectl apply -f k8s-deployment.yaml
             cat k8s-deployment.yaml | sed "s|hagert/multi-app|hagert/multi-app:${namespace}|g" > temp-deployment.yaml
             
             kubectl apply -f temp-deployment.yaml
