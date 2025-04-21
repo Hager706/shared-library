@@ -12,18 +12,13 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // Configure checkout
+        // Configure checkout - This part uses the credentials correctly for checkout
         def checkoutConfig = [
             $class: 'GitSCM',
             branches: [[name: 'main']],
             extensions: [[$class: 'CleanBeforeCheckout']],
-            userRemoteConfigs: [[url: manifestsRepo]]
+            userRemoteConfigs: [[url: manifestsRepo, credentialsId: credentialsId]]
         ]
-        
-        // Add credentials if provided
-        if (credentialsId) {
-            checkoutConfig.userRemoteConfigs[0].credentialsId = credentialsId
-        }
         
         checkout(checkoutConfig)
         
@@ -37,18 +32,9 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        // Use withCredentials for git push
-        if (credentialsId) {
-            withCredentials([usernamePassword(credentialsId: credentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                // Use authenticated HTTPS URL with embedded credentials
-                def authenticatedUrl = manifestsRepo.replace('https://', "https://${GIT_USERNAME}:${GIT_PASSWORD}@")
-                authenticatedUrl = authenticatedUrl.replace('$', '\\$') // Escape dollar signs
-                
-                sh "git push ${authenticatedUrl} main"
-            }
-        } else {
-            echo "Warning: No credentials provided - skipping push"
-            echo "Modified files are in: ${env.WORKSPACE}/${workDir}"
+        // Use SSH credentials that are already configured for git
+        sshagent([credentialsId]) {
+            sh "git push origin main"
         }
     }
     
