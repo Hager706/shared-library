@@ -2,7 +2,6 @@
 
 def call(Map config) {
     def manifestsRepo = config.manifestsRepo
-    def credentialsId = config.credentialsId
     def imageName = config.imageName
     def imageTag = config.imageTag
     def appName = config.appName
@@ -11,18 +10,15 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // First checkout using the SSH credentials
+        // Checkout the public repository without credentials
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
             userRemoteConfigs: [[
-                url: manifestsRepo,
-                credentialsId: credentialsId
+                url: manifestsRepo
             ]]
         ])
         
-        // Since we're using SSH credentials, we don't need to modify the remote URL
-        // The SSH authentication will be used automatically for git push
         sh """
             # Create and checkout a local main branch that tracks origin/main
             git checkout -B main origin/main
@@ -44,7 +40,7 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
             
             # Push the changes back to the repository
-            # Since we checked out with SSH credentials, pushing should work with the same credentials
+            # Note: This will fail unless you've configured write access
             git push origin main
         """
     }
