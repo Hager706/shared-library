@@ -10,7 +10,7 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // Checkout the public repository without credentials
+        // Clone the public repository (no credentials needed)
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
@@ -20,31 +20,33 @@ def call(Map config) {
         ])
         
         sh """
-            # Create and checkout a local main branch that tracks origin/main
+            # Set up local branch
             git checkout -B main origin/main
             
-            # Update the image tag in the deployment file
+            # Update image tag
             sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
             
-            # Verify the change
+            # Verify change
             grep -n "image: ${imageName}" ${deploymentFile}
             
-            # Configure Git user
+            # Configure Git
             git config user.email "jenkins@ivolve.com"
             git config user.name "Jenkins Pipeline"
             
-            # Stage the changes
+            # Commit changes
             git add ${deploymentFile}
-            
-            # Commit the changes
             git commit -m "Update ${appName} image to ${imageTag}"
             
-            # Push the changes back to the repository
-            # Note: This will fail unless you've configured write access
-            git push origin main
+            # Push changes (only if credentials are provided)
+            ${config.credentialsId ? """
+                git remote set-url origin https://${config.credentialsId}@github.com/Hager706/kubernetes-manifests.git
+                git push origin main
+            """ : """
+                echo "Warning: No credentials provided - skipping push to repository"
+                echo "You can manually push changes from: ${env.WORKSPACE}/${workDir}"
+            """}
         """
     }
     
-    // Return the directory path for the next stage
     return workDir
 }
