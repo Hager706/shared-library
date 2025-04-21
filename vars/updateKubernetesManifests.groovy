@@ -1,5 +1,3 @@
-#!/usr/bin/env groovy
-
 def call(Map config) {
     def manifestsRepo = config.manifestsRepo
     def credentialsId = config.credentialsId
@@ -33,6 +31,10 @@ def call(Map config) {
             
             # Stage the changes
             git add ${deploymentFile}
+            
+            # Commit and push the changes
+            git commit -m "Update ${appName} image to ${imageTag}"
+            git push origin main
         """
     }
     
