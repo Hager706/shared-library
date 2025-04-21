@@ -21,8 +21,8 @@ def call(Map config) {
         ])
         
         sh """
-            # Ensure we're on the main branch
-            git checkout main
+            # Create and checkout a local main branch that tracks origin/main
+            git checkout -B main origin/main
             
             # Update the image tag in the deployment file
             sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
