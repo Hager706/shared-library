@@ -39,7 +39,7 @@ def call(Map config) {
             
             # Push changes (only if credentials are provided)
             ${config.credentialsId ? """
-                git remote set-url origin https://${config.credentialsId}@github.com/Hager706/kubernetes-manifests.git
+                git remote set-url origin https://github.com/Hager706/kubernetes-manifests.git
                 git push origin main
             """ : """
                 echo "Warning: No credentials provided - skipping push to repository"
