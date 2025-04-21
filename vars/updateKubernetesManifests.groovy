@@ -1,3 +1,5 @@
+#!/usr/bin/env groovy
+
 def call(Map config) {
     def manifestsRepo = config.manifestsRepo
     def credentialsId = config.credentialsId
@@ -19,6 +21,9 @@ def call(Map config) {
         ])
         
         sh """
+            # Ensure we're on the main branch
+            git checkout main
+            
             # Update the image tag in the deployment file
             sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
             
@@ -32,8 +37,10 @@ def call(Map config) {
             # Stage the changes
             git add ${deploymentFile}
             
-            # Commit and push the changes
+            # Commit the changes
             git commit -m "Update ${appName} image to ${imageTag}"
+            
+            # Push the changes back to the repository
             git push origin main
         """
     }
