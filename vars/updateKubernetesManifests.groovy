@@ -1,4 +1,3 @@
-// In your shared library (vars/updateKubernetesManifests.groovy)
 def call(Map config) {
     // Required parameters
     def manifestsRepo = config.manifestsRepo
@@ -36,14 +35,21 @@ def call(Map config) {
             git config user.name "Jenkins"
             git add ${deploymentFile}
             git commit -m "Update ${appName} image to ${imageTag}"
-            
-            ${credentialsId ? """
-                git push origin main
-            """ : """
-                echo "Warning: No credentials provided - skipping push"
-                echo "Modified files are in: ${env.WORKSPACE}/${workDir}"
-            """}
         """
+        
+        // Use withCredentials for git push
+        if (credentialsId) {
+            withCredentials([usernamePassword(credentialsId: credentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                // Use authenticated HTTPS URL with embedded credentials
+                def authenticatedUrl = manifestsRepo.replace('https://', "https://${GIT_USERNAME}:${GIT_PASSWORD}@")
+                authenticatedUrl = authenticatedUrl.replace('$', '\\$') // Escape dollar signs
+                
+                sh "git push ${authenticatedUrl} main"
+            }
+        } else {
+            echo "Warning: No credentials provided - skipping push"
+            echo "Modified files are in: ${env.WORKSPACE}/${workDir}"
+        }
     }
     
     return workDir
