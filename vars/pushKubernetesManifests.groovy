@@ -12,18 +12,32 @@ def call(Map config) {
     echo "Pushing changes from directory: ${workDir}"
     
     dir(workDir) {
-        // For HTTPS, use username/password credentials
-        withCredentials([usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-            sh """
-                # Commit changes
-                git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
-                
-                # Configure Git credential helper
-                git config --local credential.helper '!f() { echo "username=${GIT_USERNAME}"; echo "password=${GIT_PASSWORD}"; }; f'
-                
-                # Push changes
-                git push origin main || echo "Push failed - possibly no changes to push"
-            """
+        // Check credential type and use appropriate method
+        if (config.credentialType == 'ssh') {
+            // For SSH credentials
+            sshagent([config.credentialsId]) {
+                sh """
+                    # Commit changes
+                    git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
+                    
+                    # Push changes using SSH
+                    git push origin main || echo "Push failed - possibly no changes to push"
+                """
+            }
+        } else {
+            // For HTTPS, use username/password credentials
+            withCredentials([usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                sh """
+                    # Commit changes
+                    git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
+                    
+                    # Configure Git credential helper
+                    git config --local credential.helper '!f() { echo "username=${GIT_USERNAME}"; echo "password=${GIT_PASSWORD}"; }; f'
+                    
+                    # Push changes
+                    git push origin main || echo "Push failed - possibly no changes to push"
+                """
+            }
         }
     }
 }
