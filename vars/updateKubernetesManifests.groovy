@@ -33,10 +33,15 @@ def call(Map config) {
         """
         
         withCredentials([usernamePassword(credentialsId: credentialsId, 
-                                 passwordVariable: 'GIT_PASSWORD', 
-                                 usernameVariable: 'GIT_USERNAME')]) {
-    sh '''
-        git remote set-url origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Hager706/kubernetes-manifests.git
-        git push origin main
-    '''
-}}
+                                         passwordVariable: 'GIT_PASSWORD', 
+                                         usernameVariable: 'GIT_USERNAME')]) {
+            // Use the credential helper with proper escaping
+            sh '''
+                git config --local credential.helper '!f() { echo "username='$GIT_USERNAME'"; echo "password='$GIT_PASSWORD'"; }; f'
+                git push origin main
+            '''
+        }
+    }
+    
+    return workDir
+}
