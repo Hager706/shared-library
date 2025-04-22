@@ -32,15 +32,15 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        withCredentials([usernamePassword(credentialsId: credentialsId, 
-                                         passwordVariable: 'GIT_PASSWORD', 
-                                         usernameVariable: 'GIT_USERNAME')]) {
-            // Use the credential helper with proper escaping
-            sh '''
-                git config --local credential.helper '!f() { echo "username='$GIT_USERNAME'"; echo "password='$GIT_PASSWORD'"; }; f'
-                git push origin main
-            '''
-        }
+       withCredentials([usernamePassword(credentialsId: credentialsId,
+                                 passwordVariable: 'GIT_PASSWORD',
+                                 usernameVariable: 'GIT_USERNAME')]) {
+    // Fix the credential helper format and use proper quoting
+    sh """
+        git config --local credential.helper '!f() { echo username="\$GIT_USERNAME"; echo password="\$GIT_PASSWORD"; }; f'
+        git push origin main
+    """
+}
     }
     
     return workDir
