@@ -32,13 +32,11 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        withCredentials([usernamePassword(credentialsId: credentialsId, 
-                                 passwordVariable: 'TOKEN', 
-                                 usernameVariable: 'USERNAME')]) {
-    sh """
-        git push https://${USERNAME}:${TOKEN}@github.com/Hager706/kubernetes-manifests.git main
-    """
-}
+        withCredentials([string(credentialsId: credentialsId, variable: 'TOKEN')]) {
+            sh """
+                git push https://${TOKEN}@github.com/Hager706/kubernetes-manifests.git main
+            """
+        }
     }
     
     return workDir
