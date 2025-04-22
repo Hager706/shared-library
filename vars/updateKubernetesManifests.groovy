@@ -32,15 +32,13 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        withCredentials([usernamePassword(credentialsId: credentialsId,
-                                         passwordVariable: 'GIT_PASSWORD',
-                                         usernameVariable: 'GIT_USERNAME')]) {
-            // Fixed credential helper syntax
-            sh """
-                git config --local credential.helper '!f() { echo username="\$GIT_USERNAME"; echo password="\$GIT_PASSWORD"; }; f'
-                git push origin main
-            """
-        }
+        withCredentials([usernamePassword(credentialsId: credentialsId, 
+                                 passwordVariable: 'TOKEN', 
+                                 usernameVariable: 'USERNAME')]) {
+    sh """
+        git push https://${USERNAME}:${TOKEN}@github.com/Hager706/kubernetes-manifests.git main
+    """
+}
     }
     
     return workDir
