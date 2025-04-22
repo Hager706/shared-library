@@ -9,13 +9,10 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // Checkout using credentials
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
-            extensions: [[
-                $class: 'CleanBeforeCheckout'
-            ]],
+            extensions: [[$class: 'CleanBeforeCheckout']],
             userRemoteConfigs: [[
                 url: manifestsRepo,
                 credentialsId: credentialsId
@@ -32,9 +29,13 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        withCredentials([string(credentialsId: credentialsId, variable: 'TOKEN')]) {
+        withCredentials([usernamePassword(
+            credentialsId: credentialsId,
+            usernameVariable: 'GIT_USERNAME',
+            passwordVariable: 'GIT_PASSWORD'
+        )]) {
             sh """
-                git push https://${TOKEN}@github.com/Hager706/kubernetes-manifests.git main
+                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Hager706/kubernetes-manifests.git main
             """
         }
     }
