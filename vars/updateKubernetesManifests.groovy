@@ -29,13 +29,10 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        withCredentials([usernamePassword(
-            credentialsId: credentialsId,
-            usernameVariable: 'GIT_USERNAME',
-            passwordVariable: 'GIT_PASSWORD'
-        )]) {
+        withCredentials([string(credentialsId: credentialsId, variable: 'GITHUB_TOKEN')]) {
             sh """
-                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Hager706/kubernetes-manifests.git main
+                git remote set-url origin https://${GITHUB_TOKEN}@github.com/Hager706/kubernetes-manifests.git
+                git push origin main
             """
         }
     }
