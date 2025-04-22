@@ -15,8 +15,13 @@ def call(Map config) {
         // Check credential type and use appropriate method
         if (config.credentialType == 'ssh') {
             // For SSH credentials
-            sshagent([config.credentialsId]) {
+            withCredentials([sshUserPrivateKey(credentialsId: config.credentialsId, 
+                                              keyFileVariable: 'SSH_KEY_FILE', 
+                                              usernameVariable: 'SSH_USERNAME')]) {
                 sh """
+                    # Setup Git SSH with the private key
+                    export GIT_SSH_COMMAND="ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no"
+                    
                     # Commit changes
                     git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
                     
@@ -26,7 +31,9 @@ def call(Map config) {
             }
         } else {
             // For HTTPS, use username/password credentials
-            withCredentials([usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+            withCredentials([usernamePassword(credentialsId: config.credentialsId, 
+                                             passwordVariable: 'GIT_PASSWORD', 
+                                             usernameVariable: 'GIT_USERNAME')]) {
                 sh """
                     # Commit changes
                     git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
