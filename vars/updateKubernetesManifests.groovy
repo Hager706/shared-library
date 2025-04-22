@@ -9,7 +9,7 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // Checkout using SSH credentials
+        // Checkout using HTTPS credentials
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
@@ -23,25 +23,16 @@ def call(Map config) {
         ])
         
         sh """
-            # Set up local branch
             git checkout -B main origin/main
-            
-            # Update image tag
             sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
-            
-            # Verify change
             grep -n "image: ${imageName}" ${deploymentFile}
-            
-            # Configure Git
             git config user.email "jenkins@example.com"
             git config user.name "Jenkins"
-            
-            # Commit changes
             git add ${deploymentFile}
             git commit -m "Update ${appName} image to ${imageTag}"
             
-            # Push changes using the same SSH credentials
-            git push origin main
+            # Push using HTTPS with credentials
+            git push https://${credentialsId}@github.com/Hager706/kubernetes-manifests.git main
         """
     }
     
