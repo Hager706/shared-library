@@ -30,10 +30,18 @@ def call(Map config) {
             git config user.name "Jenkins"
             git add ${deploymentFile}
             git commit -m "Update ${appName} image to ${imageTag}"
-            
-            # Push using HTTPS with credentials
-            git push https://${credentialsId}@github.com/Hager706/kubernetes-manifests.git main
         """
+        
+        // Push using the same credentials used for checkout
+        withCredentials([usernamePassword(
+            credentialsId: credentialsId,
+            passwordVariable: 'GIT_PASSWORD',
+            usernameVariable: 'GIT_USERNAME'
+        )]) {
+            sh """
+                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Hager706/kubernetes-manifests.git main
+            """
+        }
     }
     
     return workDir
