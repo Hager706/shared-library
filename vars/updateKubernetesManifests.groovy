@@ -1,53 +1,29 @@
 #!/usr/bin/env groovy
 
-def call(Map config) {
-    def manifestsRepo = config.manifestsRepo
-    def credentialsId = config.credentialsId
-    def imageName = config.imageName
-    def imageTag = config.imageTag
-    def appName = config.appName
-    def deploymentFile = config.deploymentFile ?: "deployment.yaml"
-    
-    // Generate a unique directory name
-    def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
-    
-    dir(workDir) {
-        // Use HTTPS URL format if SSH is causing problems
-        def repoUrl = manifestsRepo
-        if (manifestsRepo.startsWith("git@")) {
-            echo "Converting SSH URL to HTTPS format"
-            repoUrl = manifestsRepo.replace("git@github.com:", "https://github.com/")
-        }
-        
-       checkout([
-    $class: 'GitSCM',
-    branches: [[name: 'main']],
-    userRemoteConfigs: [[
-        url: repoUrl,
-        credentialsId: credentialsId
-    ]],
-    extensions: [
-        [$class: 'CloneOption', shallow: false, noTags: false, depth: 0, timeout: 30],
-        [$class: 'LocalBranch', localBranch: 'main'] // This ensures you checkout the main branch
-    ]
-])
-        
-        sh """
-            # Update the image tag in the deployment file
-            sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
-            
-            # Verify the change
-            grep -n "image: ${imageName}" ${deploymentFile} || echo "Warning: Image pattern not found"
-            
-            # Configure Git user
-            git config user.email "jenkins@ivolve.com"
-            git config user.name "Jenkins Pipeline"
-            
-            # Stage the changes
-            git add ${deploymentFile}
-        """
+def call (Map config) {
+    def image_name = config.image_name
+    // def github-credentials = config.github_credentials
+    def manifestFile = config.manifestFile
+    def manifestDir = config.manifestDir
+    def gitUsername = config.username
+    def gitEmail = config.email
+    def dockerhubUsername = config.dockerhub_username
+    // def manifest_repo = config.manifest_repo
+
+    if (!fileExists("${manifestDir}/${manifestFile}")) {
+        error("Manifest file ${manifestDir}/${manifestFile} not found!")
     }
-    
-    // Return the directory path for the next stage
-    return workDir
+    dir("${manifestDir}") {
+        sh "sed -i 's|${dockerhubUsername}/${image_name}:.*|${dockerhubUsername}/${image_name}:${BUILD_ID}|g' ${manifestFile}"
+    }
+
+    // git branch: 'main', url: "${manifest_repo}", credentialsId: "${github-credentials}"
+    sh """
+        git config --global user.name ${gitUsername}
+        git config --global user.email ${gitEmail}
+        git add ${manifestFile}
+        git commit -m 'Updated image to ${dockerhubUsername}/${image_name}:${BUILD_ID}'
+        git push origin master
+
+    """
 }
