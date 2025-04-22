@@ -19,15 +19,18 @@ def call(Map config) {
             repoUrl = manifestsRepo.replace("git@github.com:", "https://github.com/")
         }
         
-        checkout([
-            $class: 'GitSCM',
-            branches: [[name: 'main']],
-            userRemoteConfigs: [[
-                url: repoUrl,
-                credentialsId: credentialsId
-            ]],
-            extensions: [[$class: 'CloneOption', shallow: false, noTags: false, depth: 0, timeout: 30]]
-        ])
+       checkout([
+    $class: 'GitSCM',
+    branches: [[name: 'main']],
+    userRemoteConfigs: [[
+        url: repoUrl,
+        credentialsId: credentialsId
+    ]],
+    extensions: [
+        [$class: 'CloneOption', shallow: false, noTags: false, depth: 0, timeout: 30],
+        [$class: 'LocalBranch', localBranch: 'main'] // This ensures you checkout the main branch
+    ]
+])
         
         sh """
             # Update the image tag in the deployment file
