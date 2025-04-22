@@ -1,3 +1,5 @@
+#!/usr/bin/env groovy
+
 def call(Map config) {
     def manifestsRepo = config.manifestsRepo
     def credentialsId = config.credentialsId
@@ -12,7 +14,6 @@ def call(Map config) {
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
-            extensions: [[$class: 'CleanBeforeCheckout']],
             userRemoteConfigs: [[
                 url: manifestsRepo,
                 credentialsId: credentialsId
@@ -20,22 +21,21 @@ def call(Map config) {
         ])
         
         sh """
-            git checkout -B main origin/main
+            # Update the image tag in the deployment file
             sed -i "s|image: ${imageName}:.*|image: ${imageName}:${imageTag}|g" ${deploymentFile}
+            
+            # Verify the change
             grep -n "image: ${imageName}" ${deploymentFile}
-            git config user.email "jenkins@example.com"
-            git config user.name "Jenkins"
+            
+            # Configure Git user
+            git config user.email "jenkins@ivolve.com"
+            git config user.name "Jenkins Pipeline"
+            
+            # Stage the changes
             git add ${deploymentFile}
-            git commit -m "Update ${appName} image to ${imageTag}"
         """
-        
-        withCredentials([string(credentialsId: credentialsId, variable: 'GITHUB_TOKEN')]) {
-            sh """
-                git remote set-url origin https://${GITHUB_TOKEN}@github.com/Hager706/kubernetes-manifests.git
-                git push origin main
-            """
-        }
     }
     
+    // Return the directory path for the next stage
     return workDir
 }
