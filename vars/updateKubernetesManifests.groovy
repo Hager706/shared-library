@@ -9,7 +9,7 @@ def call(Map config) {
     def workDir = "k8s-manifests-${UUID.randomUUID().toString()}"
     
     dir(workDir) {
-        // Checkout using HTTPS credentials
+        // Checkout using credentials
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
@@ -32,14 +32,16 @@ def call(Map config) {
             git commit -m "Update ${appName} image to ${imageTag}"
         """
         
-        // Push using the same credentials used for checkout
-        withCredentials([usernamePassword(
-            credentialsId: credentialsId,
-            passwordVariable: 'GIT_PASSWORD',
-            usernameVariable: 'GIT_USERNAME'
-        )]) {
+        // Use withCredentials to properly authenticate the Git push
+        withCredentials([usernamePassword(credentialsId: credentialsId, 
+                                         usernameVariable: 'GIT_USERNAME', 
+                                         passwordVariable: 'GIT_PASSWORD')]) {
+            // Extract the repository URL without protocol
+            def repoUrl = manifestsRepo.replaceFirst("https://", "")
+            
+            // Use authenticated URL for push
             sh """
-                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Hager706/kubernetes-manifests.git main
+                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${repoUrl} main
             """
         }
     }
