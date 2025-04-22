@@ -1,16 +1,26 @@
-def call(String repoName, String username, String email, String gitHubCredId) {
-    withCredentials([sshUserPrivateKey(credentialsId: gitHubCredId, keyFileVariable: 'SSH_KEY')]) {
-        sh """
-            eval \$(ssh-agent -s)
-            ssh-add ${SSH_KEY}
-            ssh -o StrictHostKeyChecking=no -T git@github.com || true  # Accept host key, ignore failure
-            git remote set-url origin git@github.com:HadeerAlaa542/${repoName}.git
-            git config --global user.email "${email}"
-            git config --global user.name "${username}"
-            git add .
-            git commit -m "Push Manifests" || echo "Nothing to commit"
-            git push origin main
-            ssh-agent -k  # Clean up
-        """
+#!/usr/bin/env groovy
+
+def call(Map config) {
+    def workDir = config.workDir
+    
+    if (workDir == null || workDir.trim() == "") {
+        error "workDir parameter must be specified for pushManifests"
+        return
+    }
+    
+    echo "Pushing changes from directory: ${workDir}"
+    
+    dir(workDir) {
+        withCredentials([usernamePassword(credentialsId: config.credentialsId, 
+                                         passwordVariable: 'GIT_PASSWORD', 
+                                         usernameVariable: 'GIT_USERNAME')]) {
+            sh """
+                git commit -m "Update image tag for build #${env.BUILD_NUMBER}" || echo "No changes to commit"
+                
+                git config --local credential.helper '!f() { echo "username=${GIT_USERNAME}"; echo "password=${GIT_PASSWORD}"; }; f'
+                
+                git push origin main || echo "Push failed - possibly no changes to push"
+            """
+        }
     }
 }
